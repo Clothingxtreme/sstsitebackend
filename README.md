@@ -9,6 +9,15 @@ Node.js backend for Sen-ScryptTech inquiry and consultation forms. Deploy this f
 - Port: `8080`
 - Health check path: `/health`
 
+## Docker
+
+If Northflank is connected to the backend repository, use:
+
+- Build context: `/`
+- Dockerfile location: `/Dockerfile`
+- Port: `8080`
+- Health check path: `/health`
+
 ## Environment Variables
 
 Set these in Northflank:
