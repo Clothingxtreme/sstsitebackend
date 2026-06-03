@@ -26,6 +26,10 @@ app.use(cors({
   methods: ['GET', 'POST', 'OPTIONS'],
 }))
 
+app.get('/', (_request, response) => {
+  response.json({ ok: true, service: 'senscrypt-backend' })
+})
+
 app.get('/health', (_request, response) => {
   response.json({ ok: true, service: 'senscrypt-backend' })
 })
