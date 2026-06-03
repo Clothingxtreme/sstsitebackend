@@ -27,17 +27,19 @@ PORT=8080
 HOST=0.0.0.0
 ALLOWED_ORIGINS=https://senscrypt.tech,https://www.senscrypt.tech
 SMTP_HOST=mail.senscrypt.tech
-SMTP_PORT=587
-SMTP_SECURE=false
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_REJECT_UNAUTHORIZED=false
 SMTP_USER=your-mailbox@senscrypt.tech
 SMTP_PASS=your-mailbox-password
 SMTP_FROM=your-mailbox@senscrypt.tech
 CONTACT_TO_EMAIL=your-mailbox@senscrypt.tech
 ```
 
-If your mail server requires SSL on port `465`, use:
+The current `mail.senscrypt.tech` server responds on port `465`. Port `587` may be closed, so use SSL mode unless the mail server configuration changes.
+
+If CyberPanel has a valid production SSL certificate for `mail.senscrypt.tech`, remove this line or set it to `true`:
 
 ```env
-SMTP_PORT=465
-SMTP_SECURE=true
+SMTP_REJECT_UNAUTHORIZED=true
 ```
