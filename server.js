@@ -48,8 +48,13 @@ app.post('/api/inquiries', async (request, response) => {
 
     response.json({ ok: true })
   } catch (error) {
-    console.error('Inquiry submission failed:', error)
-    response.status(500).json({ error: 'We could not send your request right now. Please try again shortly.' })
+    const diagnostic = getMailErrorDiagnostic(error)
+    console.error('Inquiry submission failed:', diagnostic, error)
+    response.status(500).json({
+      error: 'We could not send your request right now. Please try again shortly.',
+      code: diagnostic.code,
+      hint: diagnostic.hint,
+    })
   }
 })
 
@@ -118,7 +123,9 @@ async function sendInquiryEmail(payload) {
   const secure = process.env.SMTP_SECURE === 'true' || port === 465
 
   if (!host || !user || !pass || !to || !from) {
-    throw new Error('SMTP environment variables are not configured')
+    const error = new Error('SMTP environment variables are not configured')
+    error.code = 'SMTP_ENV_MISSING'
+    throw error
   }
 
   const transporter = nodemailer.createTransport({
@@ -147,6 +154,51 @@ async function sendInquiryEmail(payload) {
     text: buildPlainText(payload),
     html: buildHtml(payload),
   })
+}
+
+function getMailErrorDiagnostic(error) {
+  const code = error?.code || error?.command || 'SMTP_UNKNOWN'
+  const message = String(error?.message || '').toLowerCase()
+
+  if (code === 'SMTP_ENV_MISSING') {
+    return {
+      code: 'SMTP_ENV_MISSING',
+      hint: 'Missing SMTP env vars on Northflank.',
+    }
+  }
+
+  if (code === 'EAUTH' || message.includes('authentication')) {
+    return {
+      code: 'SMTP_AUTH_FAILED',
+      hint: 'Check SMTP_USER and SMTP_PASS in Northflank.',
+    }
+  }
+
+  if (code === 'ESOCKET' || code === 'ECONNECTION' || code === 'ETIMEDOUT') {
+    return {
+      code: 'SMTP_CONNECTION_FAILED',
+      hint: 'Check SMTP_HOST, SMTP_PORT, SMTP_SECURE, and firewall access.',
+    }
+  }
+
+  if (message.includes('certificate') || message.includes('self-signed') || message.includes('unable to verify')) {
+    return {
+      code: 'SMTP_TLS_FAILED',
+      hint: 'Fix mail SSL or set SMTP_REJECT_UNAUTHORIZED=false.',
+    }
+  }
+
+  if (code === 'MAIL FROM' || code === 'RCPT TO') {
+    return {
+      code: 'SMTP_SENDER_OR_RECIPIENT_FAILED',
+      hint: 'Check SMTP_FROM and CONTACT_TO_EMAIL.',
+    }
+  }
+
+  return {
+    code: 'SMTP_SEND_FAILED',
+    hint: 'Check Northflank logs for the SMTP server response.',
+  }
 }
 
 function buildPlainText(payload) {
